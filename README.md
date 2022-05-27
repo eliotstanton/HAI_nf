@@ -1,3 +1,3 @@
 # HAI_nf
-module load nextflow
+module load nextflow  
 ./test.nf -c nextflow.config --reads reads -resume
