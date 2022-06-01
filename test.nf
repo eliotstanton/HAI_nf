@@ -8,8 +8,10 @@ Channel
 	.ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads} Path must not end with /" }
 	.set { raw_reads }
 
-phiX	= 'phiX.fa'
+//phiX	= 'phiX.fa'
 //phiX.view()
+
+python_ch	= Channel.fromPath('data/test.py')
 
 // TODO: Pre-processing step:
 // TODO: Ensure that reads are correctly formatted to use HAI-Seq ID nomenclature
@@ -68,9 +70,7 @@ process filtering {
 	set val(name), file(reads) from read_files_filtering
 
 	output:
-	tuple name, file("${name}_filtered{_R1,_R2}.fastq") into read_files_spades
-	file("${name}_filtered{_R1,_R2}.fastq") into read_files_kraken2
-	file("${name}_filtered{_R1,_R2}.fastq") into read_files_quast
+	tuple name, file("${name}_filtered{_R1,_R2}.fastq") into read_files_spades, read_files_kraken2, read_files_quast
 
 	"""
 
@@ -97,13 +97,14 @@ process filtering {
 // TODO: Resolve output files not working right
 process kraken2 {
 
+	tag "$name"
         publishDir "${params.outdir}/${name}", mode: 'copy'
 
 	input:
 	set val(name), file(reads) from read_files_kraken2
 
 	output:
-//	tuple name, file("${name}.txt") into files_deliverables
+	tuple name, file("${name}_kraken2_report.txt") into files_deliverables
 
 	"""
 	echo ${name}
@@ -120,17 +121,18 @@ process kraken2 {
 
 }
 
-// TODO: Save output to outdir
+
+//TODO: Add producing a trimmed down FASTA file
 process spades {
 
+	tag "$name"
         publishDir "${params.outdir}/${name}", mode: 'copy'
 
 	input:
 	set val(name), file(reads) from read_files_spades
 
 	output:
-	tuple name, file("${name}.contigs.fa") into assembled_genome_mlst
-	file("${name}.fa") into assembled_genome_quast
+	tuple name, file("${name}.fa") into assembled_genome_mlst, assembled_genome_quast
 
 	"""
 
@@ -150,6 +152,7 @@ process spades {
 
 process mlst {
 
+	tag "$name"
         publishDir "${params.outdir}/${name}", mode: 'copy'
 
 	input:
@@ -162,7 +165,7 @@ process mlst {
 
 	mlst \
 		--threads ${task.cpus} \
-		${name}.contigs.fa > ${name}_mlst.txt
+		${name}.fa > ${name}_mlst.txt
 
 	"""
 
@@ -170,32 +173,36 @@ process mlst {
 
 process quast {
 
+	tag "$name"
 	publishDir "${params.outdir}/${name}", mode: 'copy'
 
 	input:
 	set val(name), file(reads) from read_files_quast
-	set val(name), file(assembly) from assembled_genome_quast
+	set val(name2), file(assembly) from assembled_genome_quast
 
 	output:
+	tuple name, file("report.txt") into results_quast
 
 	"""
-	quast \
-		--threads $THREADS \
-		--output-dir $DIR_OUT/quast \
-		-1 $FASTQ9 -2 $FASTQ10 \
-		$SPADES_FASTA \
+	quast.py \
+		--threads ${task.cpus} \
+		--output-dir ./quast \
+		-1 ${name}_filtered_R1.fastq -2 ${name}_filtered_R2.fastq \
+		${name2}.fa \
 	"""
 
 }
 
-// TODO: Get deliverables
+// TODO: Get and process deliverables
 process deliverables {
 
 	input:
+//	file test from python_ch
 
 	output:
 
 	"""
+	
 
 	"""
 
