@@ -17,11 +17,10 @@ use warnings;
 # --------------------------------------------------------------------------- #
 
 # Define help string to be printed to command-line:
-my $var_help    = "batch_HAI.pl [DIRECTORY_IN] [DIRECTORY_OUT] [EMAIL]
+my $var_help    = "batch_HAI.pl [DIRECTORY_IN] [EMAIL]
 
 Batch submits the pairs of fastq files formatted YYYYEL-#####_R1.fastq.gz
 [DIRECTORY IN] Directory containing pairs of FASTQ files for processing
-[DIRECTORY OUT] Directory to contain output subdirectories
 [EMAIL] Email address for notification (optional)
  ";
 
@@ -29,25 +28,16 @@ Batch submits the pairs of fastq files formatted YYYYEL-#####_R1.fastq.gz
 
 # Variables passed to this script:
 my $dir_in              = $ARGV[0];
-my $dir_out             = $ARGV[1];
-my $var_email		= $ARGV[2] || "";
+my $var_email		= $ARGV[1] || "";
 
 # Print $var_help and end script if incorrect number of arguments:
-die "$var_help\n" unless scalar @ARGV == 2 || scalar @ARGV == 3;
+die "$var_help\n" unless scalar @ARGV == 1 || scalar @ARGV == 2;
 
 # Print $var_help and end script if $dir_in is missing:
 die "$var_help \nNo input directory found!\n" unless -d $dir_in;
 
 # Ensure $dir_in is accessible for other users:
 system ( "chmod 770 $dir_in" );
-
-# Make initial output directory if it doesn't already exist:
-unless ( -d $dir_out ) {
-
-	system ( "mkdir $dir_out" );
-	system ( "chmod 770 $dir_out" );
-
-}
 
 # Data structures used in this script:
 my @array_in;
@@ -65,11 +55,13 @@ my $var_submit_sh       = "$var_submit\/submit_HAI_nf.sh";
 
 # --------------------------------------------------------------------------- #
 
-print "\tsbatch \\
+print "sbatch \\
 	-p small \\
 	$var_submit_sh \\
-	$dir_in \\
-	$dir_out\n";
+	$dir_in\n";
 
-	system ("sbatch --mail-type=END --mail-type=FAIL --mail-user=$var_email -p small $var_submit_sh $dir_in $dir_out");
+	system ("sbatch --mail-type=END --mail-type=FAIL --mail-user=$var_email -p small $var_submit_sh $dir_in");
 
+#	system ("sbatch --mail-type=END --mail-type=FAIL --mail-user=$var_email -p small --output=/dev/null --error=/dev/null $var_submit_sh $dir_in");
+
+# --------------------------------------------------------------------------- #

@@ -6,7 +6,7 @@
 
 # --------------------------------------------------------------------------- #
 
-# File:                 submit_HAI.sh
+# File:                 submit_HAI_nf.sh
 # Date created:         03 June 2022
 # Date last modified:   06 June 2022
 # Author:               Eliot Stanton (eliot.stanton@state.mn.us)
@@ -14,21 +14,20 @@
 
 # --------------------------------------------------------------------------- #
 
-module load nextflow
+module load nextflow/21.10.6
 
 # Define arguments passed to the script from the command-line:
 DIR_IN=$1
-DIR_OUT=$2
 
-# Define variable for error reporting:
-VAR_ERROR=0
+# Define filepaths used by this script:
+BASE_DIR=/home/mdh/shared/software_modules/HAI_QC/0.nf
+NEXTFLOW_CONFIG=$BASE_DIR/nextflow.config
+DIR_OUT=HAI_nf_results
 
 # Define help message:
-HELP="submit_HAI_nf.sh [FASTQ_DIRECTORY] [OUTPUT_DIRECTORY]
+HELP="submit_HAI_nf.sh [FASTQ_DIRECTORY]
 
     FASTQ_DIRECTORY: Directory containing FASTQ files
-    ACCESSION: Accession number of sample to be analyzed (YYYYEL-####)
-    OUTPUT_DIRECTORY: A subdirectory containing results will be created here
 
     FASTQ files should be formatted with the following formatting:
 	 YYYYEL-####_R1.fastq.gz and YYYY-####_R2.fastq.gz.
@@ -43,7 +42,7 @@ HELP="submit_HAI_nf.sh [FASTQ_DIRECTORY] [OUTPUT_DIRECTORY]
 # --------------------------------------------------------------------------- #
 
 # Handle not enough arguments being supplied to the script:
-if [[ ! $2 ]]; then
+if [[ ! $1 ]]; then
         printf "ERROR: Incomplete arguments provided.\n\n"
         printf "$HELP\n\n"
         echo "Exiting."; exit
@@ -52,25 +51,23 @@ fi
 
 # --------------------------------------------------------------------------- #
 
-# Modify permissions for directory to contain processed files:
-chmod 770 -R $DIR_OUT
-
 # Modify permissions for directory containing the FASTQ files:
 chmod 770 -R $DIR_IN
 
 # --------------------------------------------------------------------------- #
 
 printf "HAI_QC.nf\n"
-printf "\t-c nextflow.config \ \n"
+printf "\t-c $NEXTFLOW_CONFIG \ \n"
 printf "\t--reads $DIR_IN \ \n"
 printf "\t-resume\n"
 
-./HAI_QC.nf \
-	-c nextflow.config \
+HAI_QC.nf \
+	-c $NEXTFLOW_CONFIG \
 	--reads $DIR_IN \
 	-resume
 
 # --------------------------------------------------------------------------- #
 
-# Change permissions recursively for all the new files within $DIR_OUT2:
-chmod -R 770 $DIR_OUT
+# TODO: Iterate through DIR_OUT and change permissions:
+chmod 770 -R $DIR_OUT
+chmod 770 -R work
