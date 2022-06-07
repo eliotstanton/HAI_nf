@@ -1,3 +1,4 @@
 # HAI_nf
-module load nextflow  
-./test.nf -c nextflow.config --reads reads -resume
+./batch_HAI.pl reads results
+
+TODO: Either remove requirement for output directory from wrappers or integrate variable into Nextflow script 
